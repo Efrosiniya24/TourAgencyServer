@@ -2,6 +2,7 @@ from django.db import models
 
 
 class Tour(models.Model):
+    name = models.CharField(max_length=200)
     country = models.CharField(max_length=255)
     numberOfDays = models.IntegerField()
     price = models.IntegerField()

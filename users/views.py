@@ -8,7 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from .models import User
 import jwt, datetime
 from django.db.models import Q
-import time
+from django_filters import rest_framework as filters
 
 
 class SignUp(APIView):
@@ -80,6 +80,14 @@ class AllUsersView(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
+class UserFilter(filters.FilterSet):
+    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    surname = filters.CharFilter(field_name='surname', lookup_expr='icontains')
+    patronymic = filters.CharFilter(field_name='patronymic', lookup_expr='icontains')
+
+    class Meta:
+        model = User
+        fields = ['name', 'surname', 'patronymic']
 
 class UserSearch(generics.ListAPIView):
     serializer_class = UserSerializer

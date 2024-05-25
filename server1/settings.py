@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',
     'tours',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -53,12 +54,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
-
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny'
-    ]
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
+
 
 ROOT_URLCONF = 'server1.urls'
 
