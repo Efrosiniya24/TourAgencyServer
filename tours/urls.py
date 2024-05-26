@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import Tours, TourList, TourDetail, TourDelete, TourUpdate, TourSearch
+from .views import Tours, TourList, TourDetail, TourDelete, TourUpdate, TourSearch, TourCreate
 
 urlpatterns = [
     path('addTour', Tours.as_view(), name='addTour'),
@@ -8,6 +8,6 @@ urlpatterns = [
     path('deleteTour/<int:id>/', TourDelete.as_view(), name='tourDelete'),
     path('updateTour/<int:id>/', TourUpdate.as_view(), name='tourUpdate'),
     path('search/', TourSearch.as_view(), name='tourSearch'),
+    path('tours/create/', TourCreate.as_view(), name='tour-create'),
 
 ]
-
