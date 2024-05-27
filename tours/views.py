@@ -76,6 +76,7 @@ class TourSearch(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(filter_set.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class TourCreate(APIView):
     def post(self, request, *args, **kwargs):
         serializer = TourSerializer(data=request.data)

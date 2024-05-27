@@ -8,6 +8,6 @@ urlpatterns = [
     path('deleteTour/<int:id>/', TourDelete.as_view(), name='tourDelete'),
     path('updateTour/<int:id>/', TourUpdate.as_view(), name='tourUpdate'),
     path('search/', TourSearch.as_view(), name='tourSearch'),
-    path('tours/create/', TourCreate.as_view(), name='tour-create'),
+    path('create/', TourCreate.as_view(), name='tour-create'),
 
 ]
