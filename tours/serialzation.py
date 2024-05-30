@@ -15,3 +15,9 @@ class TourSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tour
         fields = '__all__'
+
+
+class TourDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tour
+        fields = ['name', 'description', 'travelAgency']

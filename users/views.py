@@ -34,16 +34,17 @@ class SignIn(APIView):
 
         payload = {
             'id': user.id,
-            'exp': timezone.now() + timezone.timedelta(minutes=60),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
             'iat': datetime.datetime.utcnow()
-
         }
 
         token = jwt.encode(payload, 'secret', algorithm='HS256')
+
         response = Response()
         response.set_cookie(key='jwt', value=token, httponly=True)
         response.data = {'jwt': token}
         return response
+
 
 
 class UserView(APIView):

@@ -64,7 +64,8 @@ class TourSearchFilter(filters.FilterSet):
         return queryset.filter(
             Q(name__icontains=value) |
             Q(country__icontains=value) |
-            Q(city__icontains=value)
+            Q(city__icontains=value) |
+            Q(travelAgency__icontains=value)
         )
 
 

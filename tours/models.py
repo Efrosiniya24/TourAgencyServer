@@ -11,6 +11,7 @@ class Tour(models.Model):
     city = models.CharField(max_length=255)
     description = models.TextField(max_length=2000)
     program = models.TextField(max_length=500000)
+    travelAgency = models.CharField(max_length=200)
 
     def __str__(self):
         return f"{self.country} - {self.city} ({self.beginningDate} to {self.endDate})"
