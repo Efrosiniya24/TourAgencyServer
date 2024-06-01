@@ -1,5 +1,3 @@
-from django.shortcuts import render
-from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.views import APIView
 from .serializers import UserSerializer
@@ -7,8 +5,9 @@ from rest_framework.views import Response
 from rest_framework.exceptions import AuthenticationFailed
 from .models import User
 import jwt, datetime
-from django.db.models import Q
+from django.db.models import Q, Avg, Count
 from django_filters import rest_framework as filters
+
 
 
 class SignUp(APIView):
@@ -44,7 +43,6 @@ class SignIn(APIView):
         response.set_cookie(key='jwt', value=token, httponly=True)
         response.data = {'jwt': token}
         return response
-
 
 
 class UserView(APIView):
@@ -90,6 +88,7 @@ class UserFilter(filters.FilterSet):
         model = User
         fields = ['name', 'surname', 'patronymic']
 
+
 class UserSearch(generics.ListAPIView):
     serializer_class = UserSerializer
 
@@ -115,3 +114,63 @@ class UserSearch(generics.ListAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class UserCountView(APIView):
+    def get(self, request):
+        try:
+            count = User.objects.count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AverageAgeView(APIView):
+    def get(self, request):
+        try:
+            average_age = User.objects.all().aggregate(Avg('age'))['age__avg']
+            if average_age is not None:
+                average_age = int(average_age)  # Преобразование среднего возраста в целое число
+            else:
+                average_age = 0  # Обработка случая, если в базе данных нет пользователей
+            return Response({'average_age': average_age}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GenderDistributionView(APIView):
+    def get(self, request):
+        try:
+            gender_counts = User.objects.values('gender_client').annotate(count=Count('gender_client'))
+            male_count = next((item['count'] for item in gender_counts if item['gender_client'] == 'm'), 0)
+            female_count = next((item['count'] for item in gender_counts if item['gender_client'] == 'f'), 0)
+            total = male_count + female_count
+            male_percentage = (male_count / total) * 100 if total > 0 else 0
+            female_percentage = (female_count / total) * 100 if total > 0 else 0
+            return Response({
+                'male_percentage': male_percentage,
+                'female_percentage': female_percentage
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AverageAgeByGenderView(APIView):
+    def get(self, request):
+        try:
+            average_age_male = User.objects.filter(gender_client='m').aggregate(Avg('age'))['age__avg']
+            average_age_female = User.objects.filter(gender_client='f').aggregate(Avg('age'))['age__avg']
+            if average_age_male is not None:
+                average_age_male = int(average_age_male)  # Convert to integer
+            else:
+                average_age_male = 0  # Handle case if no male users
+            if average_age_female is not None:
+                average_age_female = int(average_age_female)  # Convert to integer
+            else:
+                average_age_female = 0  # Handle case if no female users
+            return Response({
+                'average_age_male': average_age_male,
+                'average_age_female': average_age_female
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

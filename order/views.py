@@ -1,12 +1,13 @@
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from users.models import User
-from .filters import OrderFilter
 
 from .models import Order, Tour
+from .filters import OrderSearchFilter
 from .serialization import OrderSerializer, OrderDetailSerializer
 
 from rest_framework.exceptions import ValidationError
@@ -45,24 +46,66 @@ class OrderDetailView(generics.RetrieveAPIView):
     lookup_field = 'id'
 
 
-class OrderSearchView(generics.ListAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderDetailSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = OrderFilter
+class OrderSearchView(APIView):
+    def post(self, request, *args, **kwargs):
+        filter_set = OrderSearchFilter(request.data, queryset=Order.objects.all())
+        print('Search request data:', request.data)  # Добавлено для отладки
+        if filter_set.is_valid():
+            queryset = filter_set.qs
+            print('Filtered queryset:', queryset)  # Добавлено для отладки
+            serializer = OrderDetailSerializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(filter_set.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderStatusUpdateView(APIView):
+    permission_classes = [permissions.AllowAny]  # Настройте доступ по необходимости
 
     def post(self, request, *args, **kwargs):
-        filterset = self.filterset_class(data=request.data, queryset=self.get_queryset())
+        order_id = request.data.get('order_id')
+        new_status = request.data.get('status')
 
-        if filterset.is_valid():
-            queryset = filterset.qs
-        else:
-            queryset = self.get_queryset()
+        try:
+            order = Order.objects.get(id=order_id)
+            order.status = new_status
+            order.save()
+            return Response({"status": "success", "message": "Order status updated successfully."},
+                            status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({"status": "error", "message": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+class OrderCountView(APIView):
+    def get(self, request):
+        try:
+            count = Order.objects.count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProcessingOrderCountView(APIView):
+    def get(self, request):
+        try:
+            count = Order.objects.filter(status='processing').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AcceptedOrderCountView(APIView):
+    def get(self, request):
+        try:
+            count = Order.objects.filter(status='accepted').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RejectedOrderCountView(APIView):
+    def get(self, request):
+        try:
+            count = Order.objects.filter(status='rejected').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

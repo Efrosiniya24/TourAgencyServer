@@ -1,14 +1,19 @@
-# filters.py
 from django_filters import rest_framework as filters
+from django.db.models import Q
 from .models import Order
 
-class OrderFilter(filters.FilterSet):
-    user_name = filters.CharFilter(field_name='user__name', lookup_expr='icontains')
-    user_surname = filters.CharFilter(field_name='user__surname', lookup_expr='icontains')
-    user_patronymic = filters.CharFilter(field_name='user__patronymic', lookup_expr='icontains')
-    tour_name = filters.CharFilter(field_name='tour__name', lookup_expr='icontains')
-    travel_agency = filters.CharFilter(field_name='tour__travelAgency', lookup_expr='icontains')
+class OrderSearchFilter(filters.FilterSet):
+    search = filters.CharFilter(method='filter_by_all_fields')
 
     class Meta:
         model = Order
-        fields = ['user_name', 'user_surname', 'user_patronymic', 'tour_name', 'travel_agency']
+        fields = ['search']
+
+    def filter_by_all_fields(self, queryset, name, value):
+        return queryset.filter(
+            Q(user__name__icontains=value) |
+            Q(user__surname__icontains=value) |
+            Q(user__patronymic__icontains=value) |
+            Q(tour__name__icontains=value) |
+            Q(tour__travelAgency__icontains=value)
+        )
