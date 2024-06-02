@@ -1,6 +1,8 @@
+from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -16,11 +18,11 @@ from rest_framework.exceptions import ValidationError
 class OrderCreateView(generics.CreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.AllowAny]  # Позволить всем пользователям доступ
+    permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
         tour_id = self.request.data.get('tour')
-        user_id = self.request.data.get('user_id')  # Получить ID пользователя из запроса
+        user_id = self.request.data.get('user_id')
 
         try:
             tour = Tour.objects.get(id=tour_id)
@@ -109,3 +111,30 @@ class RejectedOrderCountView(APIView):
             return Response({'count': count}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserOrdersView(APIView):
+
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_object_or_404(User, id=user_id)
+        orders = Order.objects.filter(user=user)
+        serializer = OrderDetailSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OrderUser(APIView):
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        orders = Order.objects.filter(user_id=user_id)
+        if not orders.exists():
+            return Response({'error': 'No orders found for this user'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = OrderDetailSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,5 +1,9 @@
 from rest_framework import status, generics
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
+
+from order.models import Order
+from order.serialization import OrderDetailSerializer
 from .serializers import UserSerializer
 from rest_framework.views import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -7,7 +11,6 @@ from .models import User
 import jwt, datetime
 from django.db.models import Q, Avg, Count
 from django_filters import rest_framework as filters
-
 
 
 class SignUp(APIView):
@@ -79,6 +82,7 @@ class AllUsersView(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
+
 class UserFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     surname = filters.CharFilter(field_name='surname', lookup_expr='icontains')
@@ -137,6 +141,7 @@ class AverageAgeView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class GenderDistributionView(APIView):
     def get(self, request):
         try:
@@ -152,6 +157,7 @@ class GenderDistributionView(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class AverageAgeByGenderView(APIView):
     def get(self, request):
@@ -172,5 +178,4 @@ class AverageAgeByGenderView(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
