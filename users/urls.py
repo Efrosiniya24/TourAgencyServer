@@ -1,6 +1,7 @@
 from django.urls import path, include
 from .views import SignUp, SignIn, UserView, LogoutView, AllUsersView, UserSearch, UserCountView, AverageAgeView, \
-    GenderDistributionView, AverageAgeByGenderView
+    GenderDistributionView, AverageAgeByGenderView, UserCountViewData, AverageAgeViewData, GenderDistributionViewData, \
+    AverageAgeByGenderViewData
 
 urlpatterns = [
     path('signIn', SignIn.as_view(), name='signIn'),
@@ -13,5 +14,9 @@ urlpatterns = [
     path('average-age', AverageAgeView.as_view(), name='average-age'),
     path('gender-distribution', GenderDistributionView.as_view(), name='gender-distribution'),
     path('average-age-by-gender', AverageAgeByGenderView.as_view(), name='average-age-by-gender'),
+    path('user-сount-data', UserCountViewData.as_view(), name='user-count'),
+    path('average-age-data', AverageAgeViewData.as_view(), name='average-age'),
+    path('gender-distribution-data', GenderDistributionViewData.as_view(), name='gender-distribution'),
+    path('average-age-by-gender-data', AverageAgeByGenderViewData.as_view(), name='average-age-by-gender'),
 
 ]

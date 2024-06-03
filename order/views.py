@@ -138,3 +138,59 @@ class OrderUser(APIView):
 
         serializer = OrderDetailSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OrderCountViewData(APIView):
+    def post(self, request):
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        try:
+            if start_date and end_date:
+                count = Order.objects.filter(createdAt__range=[start_date, end_date]).count()
+            else:
+                count = Order.objects.count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProcessingOrderCountViewData(APIView):
+    def post(self, request):
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        try:
+            if start_date and end_date:
+                count = Order.objects.filter(status='processing', createdAt__range=[start_date, end_date]).count()
+            else:
+                count = Order.objects.filter(status='processing').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AcceptedOrderCountViewData(APIView):
+    def post(self, request):
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        try:
+            if start_date and end_date:
+                count = Order.objects.filter(status='accepted', createdAt__range=[start_date, end_date]).count()
+            else:
+                count = Order.objects.filter(status='accepted').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RejectedOrderCountViewData(APIView):
+    def post(self, request):
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        try:
+            if start_date and end_date:
+                count = Order.objects.filter(status='rejected', createdAt__range=[start_date, end_date]).count()
+            else:
+                count = Order.objects.filter(status='rejected').count()
+            return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
