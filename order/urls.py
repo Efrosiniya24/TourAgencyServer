@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import OrderCreateView, OrderListView, OrderDetailView, OrderSearchView, OrderStatusUpdateView, \
     OrderCountView, ProcessingOrderCountView, AcceptedOrderCountView, RejectedOrderCountView, UserOrdersView, OrderUser, \
-    OrderCountViewData, ProcessingOrderCountViewData, AcceptedOrderCountViewData, RejectedOrderCountViewData
+    OrderCountViewData, ProcessingOrderCountViewData, AcceptedOrderCountViewData, RejectedOrderCountViewData, \
+    GenerateReportView
 
 urlpatterns = [
     path('create/', OrderCreateView.as_view(), name='order-create'),
@@ -19,5 +20,5 @@ urlpatterns = [
     path('processing-count-data/', ProcessingOrderCountViewData.as_view(), name='processing-order-count'),
     path('accepted-count-data/', AcceptedOrderCountViewData.as_view(), name='accepted-order-count'),
     path('rejected-count-data/', RejectedOrderCountViewData.as_view(), name='rejected-order-count'),
-
+    path('generate_order_report/', GenerateReportView.as_view(), name='generate_order_report'),
 ]

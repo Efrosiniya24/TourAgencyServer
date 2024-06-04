@@ -1,10 +1,28 @@
+from io import BytesIO
+
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
+from reportlab.pdfgen import canvas
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from io import BytesIO
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from datetime import datetime
+import matplotlib.pyplot as plt
+from django.utils.dateparse import parse_date
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+from .models import Order
+from django.db.models import Count
 
 from users.models import User
 
@@ -192,5 +210,86 @@ class RejectedOrderCountViewData(APIView):
             else:
                 count = Order.objects.filter(status='rejected').count()
             return Response({'count': count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+from django.http import HttpResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
+from datetime import datetime
+import matplotlib
+matplotlib.use('Agg')  # Используем 'Agg' бэкэнд для Matplotlib
+import matplotlib.pyplot as plt
+from io import BytesIO
+from .models import Order
+
+class GenerateReportView(APIView):
+    def get(self, request):
+        try:
+            # Путь к файлу шрифта DejaVuSans
+            font_path = "fonts/DejaVuSans.ttf"
+
+            # Регистрация шрифта
+            pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+
+            # Получаем количество заказов
+            total_orders = Order.objects.count()
+            processing_orders = Order.objects.filter(status='processing').count()
+            accepted_orders = Order.objects.filter(status='accepted').count()
+            rejected_orders = Order.objects.filter(status='rejected').count()
+
+            # Создаем PDF документ
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="order_report.pdf"'
+
+            p = canvas.Canvas(response, pagesize=letter)
+            width, height = letter
+
+            # Добавляем текущую дату в шапку
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            p.setFont("DejaVuSans", 12)
+            p.drawString(30, height - 30, f"Дата отчета: {current_date}")
+
+            # Центрируем заголовок отчета
+            p.setFont("DejaVuSans", 16)
+            p.drawCentredString(width / 2.0, height - 50, "Отчет по заявкам")
+
+            p.setFont("DejaVuSans", 12)
+            p.drawString(30, height - 100, f"Всего заявок: {total_orders}")
+            p.drawString(30, height - 120, f"Заявки в обработке: {processing_orders}")
+            p.drawString(30, height - 140, f"Принятые заявки: {accepted_orders}")
+            p.drawString(30, height - 160, f"Отклоненные заявки: {rejected_orders}")
+
+            # Создаем столбчатую диаграмму
+            statuses = ['В обработке', 'Принятые', 'Отклоненные']
+            counts = [processing_orders, accepted_orders, rejected_orders]
+
+            plt.figure(figsize=(6, 4))
+            plt.bar(statuses, counts, color=['#E4E4E4', '#F4E06E', '#DF9E61'])
+            plt.title('Количество заявок по статусам')
+            plt.xlabel('Статус заявки')
+            plt.ylabel('Количество')
+
+            # Сохраняем диаграмму в буфер
+            buf = BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            plt.close()
+
+            # Добавляем диаграмму в PDF
+            p.drawImage(ImageReader(buf), 30, height - 450, width=500, height=300)
+
+
+            p.showPage()
+            p.save()
+
+            return response
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
