@@ -1,6 +1,9 @@
-from rest_framework import status, generics
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from order.models import Order
 from order.serialization import OrderDetailSerializer
@@ -14,40 +17,62 @@ from django_filters import rest_framework as filters
 from django.utils import timezone
 
 
-class SignUp(APIView):
+class RegisterView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
     def post(self, request):
         serializer = UserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            refresh.payload.update({
+                'user_id': user.id,
+                'username': user.email
+            })
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SignIn(APIView):
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        email = request.data['email']
-        password = request.data['password']
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-        user = User.objects.filter(email=email).first()
+        if email is None or password is None:
+            return Response({'error': 'Нужен и логин, и пароль'}, status=status.HTTP_400_BAD_REQUEST)
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_active:
+                return Response({'error': 'Аккаунт неактивен'}, status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            user = None
 
         if user is None:
-            raise AuthenticationFailed('User not found')
+            return Response({'error': 'Неверные данные'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if not user.check_password(password):
-            raise AuthenticationFailed('Incorrect password')
+        user = authenticate(username=email, password=password)
+        if user is None:
+            return Response({'error': 'Неверные данные'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        payload = {
+        refresh = RefreshToken.for_user(user)
+        refresh.payload.update({
+            'user_id': user.id,
+            'username': user.email
+        })
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
             'id': user.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
-            'iat': datetime.datetime.utcnow()
-        }
-
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-
-        response = Response()
-        response.set_cookie(key='jwt', value=token, httponly=True)
-        response.data = {'jwt': token}
-        return response
-
+            'role': user.role
+        }, status=status.HTTP_200_OK)
 
 class UserView(APIView):
     def get(self, request):
@@ -68,13 +93,23 @@ class UserView(APIView):
 
 
 class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     def post(self, request):
-        response = Response()
-        response.delete_cookie('jwt')
-        response.data = {
-            'message': 'success',
-        }
-        return response
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'Необходим Refresh token'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+        except Exception as e:
+
+            return Response({'error': 'Неверный Refresh token'},
+
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'success': 'Выход успешен'}, status=status.HTTP_200_OK)
 
 
 class AllUsersView(APIView):

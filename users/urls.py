@@ -1,11 +1,11 @@
 from django.urls import path, include
-from .views import SignUp, SignIn, UserView, LogoutView, AllUsersView, UserSearch, UserCountView, AverageAgeView, \
+from .views import UserView, LogoutView, AllUsersView, UserSearch, UserCountView, AverageAgeView, \
     GenderDistributionView, AverageAgeByGenderView, UserCountViewData, AverageAgeViewData, GenderDistributionViewData, \
-    AverageAgeByGenderViewData
+    AverageAgeByGenderViewData, LoginView, RegisterView
 
 urlpatterns = [
-    path('signIn', SignIn.as_view(), name='signIn'),
-    path('signUp', SignUp.as_view(), name="signUp"),
+    path('signIn', LoginView.as_view(), name='signIn'),
+    path('signUp', RegisterView.as_view(), name="signUp"),
     path('user', UserView.as_view()),
     path('logout', LogoutView.as_view()),
     path('allUsers/', AllUsersView.as_view()),
